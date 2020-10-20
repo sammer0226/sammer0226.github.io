@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="Hello World, 树洞">
+    <meta name="keywords" content="树洞">
     <meta name="description" content="">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +16,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>Hello World | 树洞</title>
+    <title>树洞</title>
     <link rel="icon" type="image/png" href="/favicon.png">
 
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.css">
@@ -310,12 +310,12 @@
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/12.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/0.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">Hello World</h1>
+                    <h1 class="description center-align post-title"></h1>
                 </div>
             </div>
         </div>
@@ -460,7 +460,142 @@
         <hr class="clearfix">
         <div class="card-content article-card-content">
             <div id="articleContent">
-                
+                <ul>
+<li><p>本文从传统语言模型开始，纵览词向量的发展历程，从传统的词袋模型One-Hot,TF-IDF到基于NNLM的word2vec，基于共现矩阵的Glove,以及动态词向量ElMo，到基于transformer的GPT,BERT等，通过对词向量预训练模型的技术变革，可以窥见NLP的发展脉络和思想精髓</p>
+</li>
+<li><p>思维导图</p>
+</li>
+<li><p><img src="https://s1.ax1x.com/2020/05/18/YhIQ91.png" alt="1587889782062"></p>
+</li>
+<li><p>统计语言模型</p>
+</li>
+<li><p>知识脉络：语言模型-&gt;神经语言模型-&gt;word2vec-&gt;glove-&gt;elmo-&gt;bert</p>
+</li>
+<li><p>如何量化评估一个句子的合理性：用单词序列的联合概率来刻画</p>
+</li>
+<li><p>假设有两句话</p>
+<blockquote>
+<p>我今天想要出去玩 VS 我天今要想去出玩。</p>
+</blockquote>
+<p>我们可以很容易判断出来第一句话更符合我们的语言习惯。深入思考，为什么我们觉得第一句话更像是一句话呢，因为我们会下意识的先对句子做分词，将句子分成 我/今天/想要/出去/玩，而第二句话却很难做分词，因为无论怎么组合，都很难拼凑成我们常见的句子。从这个例子我们不难看出，我们判断一句话是否合理，第一是看构成句子中的字是否能构成几个合理的词语。</p>
+<p>让我们再看另外一个例子。</p>
+<blockquote>
+<p>南京市长江大桥</p>
+</blockquote>
+<p>这是很容易引起歧义的一句话，有2种解释方式，一种是南京市/长江大桥，另一种是南京市长/江大桥。</p>
+<p>因此，想要知道这句话到底想表达什么意思，我们还需要知道上下文环境，比如说的如果是南京市长江大桥建成于xxxx，那么建成这个词更经常出现在长江大桥之后，那么我们可以认为这句话大概率是在讲长江大桥，如果上下文环境是南京市长江大桥出席了xxxxx会议。那么我们就会知道出席这个词前面大概率是个人，因此应该把句子划分成南京/市长/江大桥。可见，我们不仅关心字与字之间构成词语的概率，也关心词语之间顺序关系的合理性</p>
+<p>那么，我们如何将直观的感受建模成数学模型和量化指标呢，我们既关心词语的合理性，同时也关心词语之间的共现关系，用数学模型来表示的话，就是一句话出现的概率。而一句话又是由不同的词语序列构成的，因此T位置的词语会受到前T-1个词语的影响，这是一个条件概率。我们引入一个句子的联合概率来表征语言模型</p>
+</li>
+<li><p><img src="https://s1.ax1x.com/2020/05/18/Yhh7HH.png" alt="1587540059067"></p>
+</li>
+<li><p>之后的很多无监督预训练词向量的模型都是建立在语言模型之上，我们通过最大化一个句子的联合概率来调整模型参数。其中，对于语言模型，可以有一些前提假设和扩展。比如P(wn|w1,w2…wn-1),我们可以用马尔科夫假设来简化计算量，即我们认为第N位置的词只与前面有限个词有关，而不是和前N-1个词均有关。特别的，当我们假设第N个词只与前一个词有关，那么就是Bi-Gram模型，同样可以类比得到Tri-Gram等。这便是n-gram模型，利用马尔科夫假设来简化计算和缩小共现词表库的大小。因此，在Bi-Gram模型下</p>
+<p>P(wn|w1,w2…wn-1) = P(wn|wn-1)。 此外，我们不仅可以用前N-1个词来限制第N个词，我们还可以用窗口词来刻画该词的上下文环境。然后同样是希望在给定上下文环境时，目标词的出现概率最大。通过这个优化目标来调整参数</p>
+<p>有了优化目标之后，我们首先需要考虑一个问题。一句话如何用数字来表示呢？</p>
+<p>我们在做数据挖掘时，可以输入离散或者连续型变量作为特征，做图像处理时我们输入一张图片，其内部每个像素点用RGB的256种亮度值来表示。而在文本中，我们需要表示一句话，最朴素的思想就是用One-Hot将整个词表大小作为特征维度，如果一句话的某个词出现在这个词表中，则该位置计为1，反之为0。</p>
+<blockquote>
+<p>举例说明: 例如我们一共有3句话</p>
+<ol>
+<li>今天/天气/真好</li>
+<li>我们/今天/去/学习</li>
+<li>学习/使/我/快乐</li>
+</ol>
+<p>经过分词后，我们统计得到一共有[今天，天气，真好，我们，去，学习，使，我，快乐]一共9个不同的词。那么如果是用One-Hot的方式来表征的话，3句话对应的词向量就应该是</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>今天</th>
+<th>天气</th>
+<th>真好</th>
+<th>我们</th>
+<th>去</th>
+<th>学习</th>
+<th>使</th>
+<th>我</th>
+<th>快乐</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>今天天气真好</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>我们今天去学习</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>学习使我快乐</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody></table>
+<p>词语的语义包含哪些方面</p>
+<ul>
+<li>同义词 (Synonyms)： couch/sofa, car/automobile</li>
+<li>反义词 (Antonyms)： long/short, big/little</li>
+<li>词相似性 (Word Similarity)：cat 和 dog 不是同义词，但是它们是相似的。</li>
+<li>词相关性 (Word Relatedness)：词和词之前可以是相关的，但不是相似的。coffee 和 cup 是不相似的，但是它们显然是相关的。<ul>
+<li>语义域/主题模型(semantic field/topic models LDA)： 一些词同属于某个 semantic domain，相互之间有强相关性，restaurant(waiter, menu, plate, food, chef), house(door, roof, kitchen, family, bed)</li>
+<li>语义框架和角色(Semantic Frames and Roles)： 一些词同属于某个事件的角色，buy, sell, pay 属于一次购买的不同角色。</li>
+<li>上/下位词(hypernym/hyponym)：一个词是另一个词的父类叫上位词(hypernym)，反之叫下位词(hyponym), vehicle/car, mammal/dog, fruit/mango。</li>
+</ul>
+</li>
+<li>情感/情绪/观点/评价词(connotations, emotions, sentiment, opinions)：正负向情绪词happy/sad，正反向评价词(great, love)/(terrible, hate)。</li>
+</ul>
+<h1 id="TF-IDF"><a href="#TF-IDF" class="headerlink" title="TF-IDF"></a>TF-IDF</h1><p><img src="https://s1.ax1x.com/2020/05/18/YhhbEd.png" alt="1587892571405"></p>
+<h1 id="PMI"><a href="#PMI" class="headerlink" title="PMI"></a>PMI</h1><p>(点互信息): 刻画两个词之间是否强相关</p>
+<p>计算语料库中两个词共同出现的次数是否多于我们先验期望它们偶然出现的概率</p>
+<p><img src="https://s1.ax1x.com/2020/05/18/YhhL4I.png" alt="1587892706485"></p>
+<h1 id="神经网络语言模型"><a href="#神经网络语言模型" class="headerlink" title="神经网络语言模型"></a>神经网络语言模型</h1><p><img src="https://s1.ax1x.com/2020/05/18/Yh5ZFA.png" alt="image-20200510204307744"></p>
+<h1 id="Word2Vec"><a href="#Word2Vec" class="headerlink" title="Word2Vec"></a>Word2Vec</h1><p>skip-gram: 用中间词预测上下文(更常用，训练更慢，但是效果更好，对于生僻词的识别更友好)</p>
+<p>CBOW：用上下文词预测中间词</p>
+<p>CBOW训练速度要比skip-gram快，原因在于一个滑动窗口内只能产生一个sample，而skip-gram可以产生多个。比如滑动窗口含“the man loves his son”， loves为中心词。对于CBOW，只有一个样本，该样本以loves为中心词，“the man his son”作为背景词；对于skip-gram，有多个样本，即&lt;love, the&gt;, &lt;love, man&gt;, &lt;love, his&gt;, &lt;love, son&gt;。</p>
+<p>skip-gram效果更好一些，尤其是生僻字。原因有两个，一是上一段提到的样本的原因。love在skip-gram有四个sample，可以更新四次参数（假设使用随机梯度下降）。而使用CBOW时”the man his son”只有一个样本，更新一次参数。此外，CBOW用所有背景词的均值来表示背景词信息带入运算，也会损失精度。</p>
+<p>CBOW训练的时候是中心词的词向量不变，更新上下文词向量的梯度，skip-gram反之</p>
+<p>预训练思想(2种方式):</p>
+<ul>
+<li>一种是 Frozen，就是 Word Embedding 那层网络参数固定不动</li>
+<li>另外一种是 Fine-Tuning，就是 Word Embedding 这层参数用现成的词向量初始化，然后参与模型的训练过程</li>
+</ul>
+<h1 id="Glove-Global-Vectors-for-Word-Representation"><a href="#Glove-Global-Vectors-for-Word-Representation" class="headerlink" title="Glove(Global Vectors for Word Representation)"></a>Glove(Global Vectors for Word Representation)</h1><p>核心观点是共现条件概率的比率能更显著体现词的相似性</p>
+<p><img src="https://s1.ax1x.com/2020/05/18/Yhhvgf.png" alt="1588835848621"></p>
+<p><img src="https://s1.ax1x.com/2020/05/18/Yhhxv8.png" alt="1588835880409"></p>
+<p>Xij表示单词j出现在单词i的上下文中的次数</p>
+<p>Xi表示单词i的上下文中所有单词出现的总次数</p>
+<ul>
+<li>Pij = P(j|i) = Xij/Xi</li>
+</ul>
+<h1 id="ELMo-Embeddings-from-Language-Models"><a href="#ELMo-Embeddings-from-Language-Models" class="headerlink" title="ELMo(Embeddings from Language Models)"></a>ELMo(Embeddings from Language Models)</h1><p><img src="https://s1.ax1x.com/2020/05/18/Yh5uSP.png" alt="image-20200510201544158"></p>
+<p><img src="https://s1.ax1x.com/2020/05/18/Yh5eJI.png" alt="image-20200510203609290"></p>
+<p>目标函数(语言模型)：</p>
+<p><img src="https://s1.ax1x.com/2020/05/18/Yh5Eod.png" alt="image-20200510204021776"></p>
+</li>
+</ul>
+
             </div>
             <hr/>
 
@@ -485,7 +620,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://example.com/2020/10/20/hello-world/">http://example.com/2020/10/20/hello-world/</a>
+                    <a href="http://example.com/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/">http://example.com/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -567,13 +702,13 @@
                 <i class="far fa-dot-circle"></i>&nbsp;本篇
             </div>
             <div class="card">
-                <a href="/2020/10/20/hello-world/">
+                <a href="/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/12.jpg" class="responsive-img" alt="Hello World">
+                        <img src="/medias/featureimages/0.jpg" class="responsive-img" alt="">
                         
-                        <span class="card-title">Hello World</span>
+                        <span class="card-title"></span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -605,13 +740,13 @@
                 本篇&nbsp;<i class="far fa-dot-circle"></i>
             </div>
             <div class="card">
-                <a href="/2020/10/20/hello-world/">
+                <a href="/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/12.jpg" class="responsive-img" alt="Hello World">
+                        <img src="/medias/featureimages/0.jpg" class="responsive-img" alt="">
                         
-                        <span class="card-title">Hello World</span>
+                        <span class="card-title"></span>
                     </div>
                 </a>
                 <div class="card-content article-content">
