@@ -461,147 +461,38 @@
         <div class="card-content article-card-content">
             <div id="articleContent">
                 <hr>
-<p>本文从传统语言模型开始，纵览词向量的发展历程，从传统的词袋模型One-Hot,TF-IDF到基于NNLM的word2vec，基于共现矩阵的Glove,以及动态词向量ElMo，到基于transformer的GPT,BERT等，通过词向量预训练模型的技术变革，可以窥见NLP的发展脉络和思想精髓</p>
+<p>本文希望能从特征抽取的角度来解释不同的特征抽取器的局限性和前瞻探索</p>
 <hr>
-<h3 id="思维导图"><a href="#思维导图" class="headerlink" title="思维导图"></a>思维导图</h3><ul>
-<li><img src="https://s1.ax1x.com/2020/05/18/YhIQ91.png" alt="思维导图"></li>
-</ul>
-<h3 id="统计概率模型"><a href="#统计概率模型" class="headerlink" title="统计概率模型"></a>统计概率模型</h3><ul>
-<li><p>知识脉络：语言模型-&gt;神经语言模型-&gt;word2vec-&gt;glove-&gt;elmo-&gt;bert</p>
-</li>
-<li><p>如何量化评估一个句子的合理性：用单词序列的联合概率来刻画</p>
-</li>
-<li><p>假设有两句话</p>
-<blockquote>
-<p>我今天想要出去玩 VS 我天今要想去出玩。</p>
-</blockquote>
-<p>我们可以很容易判断出来第一句话更符合我们的语言习惯。深入思考，为什么我们觉得第一句话更像是一句话呢，因为我们会下意识的先对句子做分词，将句子分成 我/今天/想要/出去/玩，而第二句话却很难做分词，因为无论怎么组合，都很难拼凑成我们常见的句子。从这个例子我们不难看出，我们判断一句话是否合理，第一是看构成句子中的字是否能构成几个合理的词语。</p>
-<p>让我们再看另外一个例子。</p>
-<blockquote>
-<p>南京市长江大桥</p>
-</blockquote>
-<p>这是很容易引起歧义的一句话，有2种解释方式，一种是南京市/长江大桥，另一种是南京市长/江大桥。</p>
-<p>因此，想要知道这句话到底想表达什么意思，我们还需要知道上下文环境，比如说的如果是南京市长江大桥建成于xxxx，那么建成这个词更经常出现在长江大桥之后，那么我们可以认为这句话大概率是在讲长江大桥，如果上下文环境是南京市长江大桥出席了xxxxx会议。那么我们就会知道出席这个词前面大概率是个人，因此应该把句子划分成南京/市长/江大桥。可见，我们不仅关心字与字之间构成词语的概率，也关心词语之间顺序关系的合理性</p>
-<p>那么，我们如何将直观的感受建模成数学模型和量化指标呢，我们既关心词语的合理性，同时也关心词语之间的共现关系，用数学模型来表示的话，就是一句话出现的概率。而一句话又是由不同的词语序列构成的，因此T位置的词语会受到前T-1个词语的影响，这是一个条件概率。我们引入一个句子的联合概率来表征语言模型</p>
-</li>
-<li><p><img src="https://s1.ax1x.com/2020/05/18/Yhh7HH.png" alt="联合概率"></p>
-</li>
-<li><p>之后的很多无监督预训练词向量的模型都是建立在语言模型之上，我们通过最大化一个句子的联合概率来调整模型参数。其中，对于语言模型，可以有一些前提假设和扩展。比如P(wn|w1,w2…wn-1),我们可以用马尔科夫假设来简化计算量，即我们认为第N位置的词只与前面有限个词有关，而不是和前N-1个词均有关。特别的，当我们假设第N个词只与前一个词有关，那么就是Bi-Gram模型，同样可以类比得到Tri-Gram等。这便是n-gram模型，利用马尔科夫假设来简化计算和缩小共现词表库的大小。因此，在Bi-Gram模型下</p>
-<p>P(wn|w1,w2…wn-1) = P(wn|wn-1)。 此外，我们不仅可以用前N-1个词来限制第N个词，我们还可以用窗口词来刻画该词的上下文环境。然后同样是希望在给定上下文环境时，目标词的出现概率最大。通过这个优化目标来调整参数</p>
-<p>有了优化目标之后，我们首先需要考虑一个问题。一句话如何用数字来表示呢？</p>
-<p>我们在做数据挖掘时，可以输入离散或者连续型变量作为特征，做图像处理时我们输入一张图片，其内部每个像素点用RGB的256种亮度值来表示。而在文本中，我们需要表示一句话，最朴素的思想就是用One-Hot将整个词表大小作为特征维度，如果一句话的某个词出现在这个词表中，则该位置计为1，反之为0。</p>
-<blockquote>
-<p>举例说明: 例如我们一共有3句话</p>
-<ol>
-<li>今天/天气/真好</li>
-<li>我们/今天/去/学习</li>
-<li>学习/使/我/快乐</li>
-</ol>
-<p>经过分词后，我们统计得到一共有[今天，天气，真好，我们，去，学习，使，我，快乐]一共9个不同的词。那么如果是用One-Hot的方式来表征的话，3句话对应的词向量就应该是</p>
-</blockquote>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>今天</th>
-<th>天气</th>
-<th>真好</th>
-<th>我们</th>
-<th>去</th>
-<th>学习</th>
-<th>使</th>
-<th>我</th>
-<th>快乐</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>今天天气真好</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-</tr>
-<tr>
-<td>我们今天去学习</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-</tr>
-<tr>
-<td>学习使我快乐</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-<td>1</td>
-</tr>
-</tbody></table>
-<p>词语的语义包含哪些方面</p>
+<p><img src="https://s1.ax1x.com/2020/05/14/Y0vUc4.png" alt="TEXT-CNN"></p>
+<p>对于某个Filter来说，可以想象有一个d*k大小的移动窗口从输入矩阵的第一个字开始不断往后移动，其中k是Filter指定的窗口大小，d是Word Embedding长度。对于某个时刻的窗口，通过神经网络的非线性变换，将这个窗口内的输入值转换为某个特征值，随着窗口不断往后移动，这个Filter对应的特征值不断产生，形成这个Filter的特征向量。这就是卷积核抽取特征的过程。卷积层内每个Filter都如此操作，就形成了不同的特征序列。Pooling 层则对Filter的特征进行降维操作，形成最终的特征。一般在Pooling层之后连接全联接层神经网络，形成最后的分类过程</p>
+<p>存在远距离依赖无法捕捉的问题，比如超过滑动窗口范围的词之间就无法建立联系</p>
+<p>解决办法有2种</p>
 <ul>
-<li><p>同义词 (Synonyms)： couch/sofa, car/automobile</p>
-</li>
-<li><p>反义词 (Antonyms)： long/short, big/little</p>
-</li>
-<li><p>词相似性 (Word Similarity)：cat 和 dog 不是同义词，但是它们是相似的。</p>
-</li>
-<li><p>词相关性 (Word Relatedness)：词和词之前可以是相关的，但不是相似的。coffee 和 cup 是不相似的，但是它们显然是相关的。</p>
+<li>Dilated CNN,膨胀卷积，通过跳接的方式来进行特征组合</li>
+<li>叠加卷积层，增大卷积核可以覆盖的长度</li>
+<li><img src="https://s1.ax1x.com/2020/05/14/Y0xFv4.png" alt="堆叠卷积层"></li>
+</ul>
+<p>CNN在池化层会损失掉位置信息，所以目前CNN的一个发展趋势是抛弃Pooling层，靠全卷积层来叠加网络深度</p>
 <ul>
-<li>语义域/主题模型(semantic field/topic models LDA)： 一些词同属于某个 semantic domain，相互之间有强相关性，restaurant(waiter, menu, plate, food, chef), house(door, roof, kitchen, family, bed)</li>
+<li><p><img src="https://s1.ax1x.com/2020/05/14/Y0xVbR.png" alt="全卷积层"></p>
+<p>上图展示了在NLP领域能够施展身手的摩登CNN的主体结构，通常由1-D卷积层来叠加深度，使用Skip Connection来辅助优化，也可以引入Dilated CNN等手段。比如ConvS2S主体就是上图所示结构，Encoder包含 15个卷积层，卷积核kernel size=3，覆盖输入长度为25。当然对于ConvS2S来说，卷积核里引入GLU门控非线性函数也有重要帮助</p>
+<p>门控线性单元Gated linear units是在Language model with gated convolutional network中提出的</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1612.08083">Language Modeling with Gated Convolutional Networks</a></li>
+<li>两个主要问题，为什么要引入GLU，为什么叫线性单元</li>
+<li>第一个问题，引入GLU是为了解决堆叠卷积层时引起梯度消失的问题(多层卷积可以捕捉长距离和引入层次特征的挖掘，类似语法树的概念)</li>
+<li>第二个问题，线性单元指的是卷积层计算完后不再经过非线性激活函数(如tanh),而是利用门控机制，引入一个卷积核充当lstm中的输出门，利用sigmoid函数，将卷积后的值映射到0-1之间，用来控制有多少信息会被流入下一层<ul>
+<li><img src="https://s1.ax1x.com/2020/05/14/Y0x8rd.png" alt="img"></li>
+<li>LSTM中有input门和forget门两种，这两种缺一则会导致有些信息的缺失。而卷积中，作者经过实验，提出不需要forget gate。此外，作者对两种门控机制GTU和GLU做了比较：</li>
+<li><img src="https://s1.ax1x.com/2020/05/14/Y0xDMQ.png" alt="img"></li>
+<li>作者从梯度的角度对两种门控单元进行了分析，发现GTU会衰减的比较快，因为其梯度公式中包含两个衰减项。而GLU只有一个衰减项，可以较好地减轻梯度弥散。</li>
+<li>该文还有一个小trick，经过多个这样的卷积层之后，再将其输入到softmax中，得到最后的预测。作者提出，在最后的softmax层，普通的softmax会因为词表巨大而非常低效。因而选用adaptive softmax。adaptive softmax可以为高频词分配更多的空间而给低频次分配比较少的空间</li>
+<li>adaptive softmax可以参考<a href="https://link.zhihu.com/?target=https://arxiv.org/pdf/1609.04309.pdf">Efficient softmax approximation for GPUs</a>（<strong>TODO</strong>）</li>
 </ul>
 </li>
-<li><p>语义框架和角色(Semantic Frames and Roles)： 一些词同属于某个事件的角色，buy, sell, pay 属于一次购买的不同角色。</p>
-<ul>
-<li>上/下位词(hypernym/hyponym)：一个词是另一个词的父类叫上位词(hypernym)，反之叫下位词(hyponym), vehicle/car, mammal/dog, fruit/mango。</li>
 </ul>
 </li>
-<li><p>情感/情绪/观点/评价词(connotations, emotions, sentiment, opinions)：正负向情绪词happy/sad，正反向评价词(great, love)/(terrible, hate)</p>
-</li>
-</ul>
-<h4 id="TF-IDF"><a href="#TF-IDF" class="headerlink" title="TF-IDF"></a>TF-IDF</h4><p><img src="https://s1.ax1x.com/2020/05/18/YhhbEd.png" alt="TF-IDF"></p>
-<h4 id="PMI"><a href="#PMI" class="headerlink" title="PMI"></a>PMI</h4><p>(点互信息): 刻画两个词之间是否强相关</p>
-<p>计算语料库中两个词共同出现的次数是否多于我们先验期望它们偶然出现的概率</p>
-<p><img src="https://s1.ax1x.com/2020/05/18/YhhL4I.png" alt="PMI"></p>
-<h3 id="神经网络语言模型"><a href="#神经网络语言模型" class="headerlink" title="神经网络语言模型"></a>神经网络语言模型</h3><p><img src="https://s1.ax1x.com/2020/05/18/Yh5ZFA.png" alt="网络结构"></p>
-<h4 id="Word2Vec"><a href="#Word2Vec" class="headerlink" title="Word2Vec"></a>Word2Vec</h4><p>skip-gram: 用中间词预测上下文(更常用，训练更慢，但是效果更好，对于生僻词的识别更友好)</p>
-<p>CBOW：用上下文词预测中间词</p>
-<p>CBOW训练速度要比skip-gram快，原因在于一个滑动窗口内只能产生一个sample，而skip-gram可以产生多个。比如滑动窗口含“the man loves his son”， loves为中心词。对于CBOW，只有一个样本，该样本以loves为中心词，“the man his son”作为背景词；对于skip-gram，有多个样本，即&lt;love, the&gt;, &lt;love, man&gt;, &lt;love, his&gt;, &lt;love, son&gt;。</p>
-<p>skip-gram效果更好一些，尤其是生僻字。原因有两个，一是上一段提到的样本的原因。love在skip-gram有四个sample，可以更新四次参数（假设使用随机梯度下降）。而使用CBOW时”the man his son”只有一个样本，更新一次参数。此外，CBOW用所有背景词的均值来表示背景词信息带入运算，也会损失精度。</p>
-<p>CBOW训练的时候是中心词的词向量不变，更新上下文词向量的梯度，skip-gram反之</p>
-</li>
-</ul>
-<p>预训练思想(2种方式):</p>
-<ul>
-<li><p>一种是 Frozen，就是 Word Embedding 那层网络参数固定不动</p>
-<ul>
-<li>另外一种是 Fine-Tuning，就是 Word Embedding 这层参数用现成的词向量初始化，然后参与模型的训练过程</li>
-</ul>
-<h4 id="Glove-Global-Vectors-for-Word-Representation"><a href="#Glove-Global-Vectors-for-Word-Representation" class="headerlink" title="Glove(Global Vectors for Word Representation)"></a>Glove(Global Vectors for Word Representation)</h4><p>核心观点是共现条件概率的比率能更显著体现词的相似性</p>
-<p><img src="https://s1.ax1x.com/2020/05/18/Yhhvgf.png" alt="共现概率"></p>
-<p><img src="https://s1.ax1x.com/2020/05/18/Yhhxv8.png" alt="优化目标"></p>
-<p>Xij表示单词j出现在单词i的上下文中的次数</p>
-<p>Xi表示单词i的上下文中所有单词出现的总次数</p>
-<ul>
-<li>Pij = P(j|i) = Xij/Xi</li>
-</ul>
-<h4 id="ELMo-Embeddings-from-Language-Models"><a href="#ELMo-Embeddings-from-Language-Models" class="headerlink" title="ELMo(Embeddings from Language Models)"></a>ELMo(Embeddings from Language Models)</h4><p><img src="https://s1.ax1x.com/2020/05/18/Yh5uSP.png" alt="网络结构"></p>
-<p><img src="https://s1.ax1x.com/2020/05/18/Yh5eJI.png" alt="示例"></p>
-<p>目标函数(语言模型)：</p>
-<p><img src="https://s1.ax1x.com/2020/05/18/Yh5Eod.png" alt="优化目标"></p>
+<li><p><img src="https://s1.ax1x.com/2020/05/14/Y0z76g.png" alt="img"></p>
 </li>
 </ul>
 
@@ -629,7 +520,7 @@
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="http://example.com/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/">http://example.com/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/</a>
+                    <a href="http://example.com/2020/10/20/%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96/">http://example.com/2020/10/20/%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -706,9 +597,10 @@
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
+            </div>
             <div class="card">
                 <a href="/2020/10/20/%E7%89%B9%E5%BE%81%E6%8F%90%E5%8F%96/">
                     <div class="card-image">
@@ -726,9 +618,9 @@
                         
                     </div>
                     <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2020-10-20
-                        </span>
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2020-10-20
+                            </span>
                         <span class="publish-author">
                             
                             <i class="fas fa-user fa-fw"></i>
@@ -737,6 +629,7 @@
                         </span>
                     </div>
                 </div>
+
                 
             </div>
         </div>
@@ -744,7 +637,7 @@
         
         <div class="article col s12 m6" data-aos="fade-up">
             <div class="article-badge right-badge text-color">
-                本篇&nbsp;<i class="far fa-dot-circle"></i>
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
             </div>
             <div class="card">
                 <a href="/2020/10/20/%E8%AF%8D%E5%90%91%E9%87%8F/">
@@ -774,7 +667,6 @@
                         </span>
                     </div>
                 </div>
-
                 
             </div>
         </div>
